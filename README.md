@@ -1,4 +1,4 @@
-Foundations of Data Science - Final Project. 
+Foundations of Data Science - Final Project
 
 The dataset analyzed in this project consists of gene expression counts from various patient
 samples. The focus gene, GCLC, plays a crucial role in the catalytic (active) part of the
