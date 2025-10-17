@@ -1,0 +1,241 @@
+---
+title: "Final Project"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-10-16"
+---
+
+```{r}
+#Setup
+library(ggplot2)
+
+counts <- read.csv("C:\\Users\\Kundan Rao\\Documents\\Dartmouth Classes\\Foundations of Data Science\\Final Project\\counts.csv", row.names = 1)
+
+head(rownames(counts), 20)
+
+meta_data <- read.csv("C:\\Users\\Kundan Rao\\Documents\\Dartmouth Classes\\Foundations of Data Science\\Final Project\\meta_data.csv")
+
+
+#Summary Statistics for GCLC
+gene_sample_project <- as.numeric(counts["ENSG00000001084.13", ])
+
+mean_gene <- mean(gene_sample_project)
+median_gene <- median(gene_sample_project)
+sd_gene <- sd(gene_sample_project)
+min_gene <- min(gene_sample_project)
+max_gene <- max(gene_sample_project)
+
+summary <- data.frame(
+  Mean = mean_gene,
+  Median = median_gene,
+  Standard_Deviation = sd_gene,
+  Minimum = min_gene,
+  Maximum = max_gene
+ )
+
+print(summary)
+
+
+
+#Histogram
+ggplot(data.frame(gene_sample_project), aes(x = gene_sample_project)) +
+     geom_histogram( fill = "forestgreen", color = "black", bins = 30) +
+      labs(x = "Gene Expression", y = "Counts", 
+          title = "Expression of Gene GCLC in Patients") +
+     scale_fill_brewer(palette = "Set1") + 
+     theme_minimal() + theme(
+    axis.text = element_text(face = "bold"),        
+    axis.title = element_text(face = "bold"),       
+    plot.title = element_text(face = "bold", size = 16, hjust = 0.5),  
+    legend.title = element_text(face = "bold"))
+
+ggsave("histogram_project.png", width = 8, height = 6, dpi = 300)
+
+
+#Scatterplot
+gene_sample_project_two <- as.numeric(counts["ENSG00000001167.14", ])
+
+
+
+#Summary Statistics for NFYA
+mean_gene2 <- mean(gene_sample_project_two)
+median_gene2 <- median(gene_sample_project_two)
+sd_gene2 <- sd(gene_sample_project_two)
+min_gene2 <- min(gene_sample_project_two)
+max_gene2 <- max(gene_sample_project_two)
+
+summary2 <- data.frame(
+  Mean = mean_gene2,
+  Median = median_gene2,
+  Standard_Deviation = sd_gene2,
+  Minimum = min_gene2,
+  Maximum = max_gene2
+ )
+
+print(summary2)
+
+scatter_plot_data <- data.frame(
+     
+     Gene_1 = gene_sample_project, 
+     Gene_2 = gene_sample_project_two
+
+)
+
+model <- lm(Gene_2 ~ Gene_1, data = scatter_plot_data)
+slope <- coef(model)[2]
+intercept <- coef(model)[1]
+
+
+eq_label <- paste0("y = ",
+                   round(slope, 2), "x + ",
+                   round(intercept, 2))
+
+ggplot(data.frame(scatter_plot_data), aes(x = Gene_1, y = Gene_2)) +
+     geom_point( color = "orangered1", alpha = 0.6) + geom_smooth(method = "lm", se = FALSE, color = "navy", size = 1.2) +
+     labs(x = "Gene GCLC", y = "Gene NFYA", 
+     title = "Expression of Genes GCLC vs. NFYA") +
+     scale_fill_brewer(palette = "Set1") + 
+     theme_minimal() + annotate("text", x = Inf, y = Inf, label = paste0("y = ", round(intercept, 2), " + ", round(slope, 2), "x"), 
+     hjust = 1.1, vjust = 2, size = 5, color = "white") + theme(
+    axis.text = element_text(face = "bold"),        
+    axis.title = element_text(face = "bold"),      
+    plot.title = element_text(face = "bold", size = 16, hjust = 0.5), 
+    legend.title = element_text(face = "bold")) + annotate("text", x = Inf, y = -Inf, label =    eq_label, hjust = 1.1, vjust = -1.1, size = 5, color = "black")
+
+
+ggsave("scatterplot_project.png", width = 8, height = 6, dpi = 300)
+
+
+
+#Violinplot
+covariate <- meta_data$ajcc_pathologic_stage
+
+violin_plot_data <- data.frame(
+  Expression = gene_sample_project,
+  Covariate = covariate
+  
+)
+
+ggplot(subset(violin_plot_data, Covariate != "NA"), 
+       aes(x = Covariate, y = Expression, fill = Covariate)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width = 0.1, outlier.shape = NA, fill = "white", color = "black") +
+  labs(
+    title = "Distribution of Gene GCLC in Various Pathologic Stages",
+    x = "Pathologic Stage",
+    y = "Expression of Gene GCLC",
+    fill = "Pathologic Stage"
+  ) +
+  scale_fill_brewer(palette = "Set3") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"),
+    axis.text.y = element_text(face = "bold"),
+    axis.title = element_text(face = "bold"),
+    plot.title = element_text(face = "bold", size = 16),
+    legend.title = element_text(face = "bold"),
+    legend.text = element_text(face = "bold"),
+    legend.position = "none"
+  )
+
+ggsave("violin_project.png", width = 8, height = 6, dpi = 300)
+
+
+
+#heatmap
+library(ComplexHeatmap)
+library(circlize)
+
+ten_genes <- rownames(counts)[31:40]
+
+heatmap <- counts[ten_genes, ]
+
+
+heatmap_anno <- HeatmapAnnotation(
+  Stage = covariate, 
+  col = list(Stage = c(
+    "Stage I" = "skyblue", 
+    "Stage II" = "orange", 
+    "Stage III" = "green", 
+    "Stage IV" = "red", 
+    "Stage IIA" = "magenta", 
+    "Stage IIIA" = "mistyrose", 
+    "Stage IIB" = "palegreen", 
+    "Stage IIIB" = "orangered3", 
+    "Stage IIIC" = "paleturquoise", 
+    "Stage X" = "peachpuff", 
+    "Stage IB" = "seagreen4", 
+    "Stage 0" = "salmon2",
+    "Stage IA" = "royalblue"
+    
+    
+  ))
+  
+  
+)
+heatmap <- as.matrix(heatmap)
+mode(heatmap) <- "numeric"
+heatmap_log <- log2(heatmap + 1)
+
+ht <- Heatmap(
+  heatmap_log,
+  name = "Expression",
+  top_annotation = heatmap_anno,
+  show_row_names = TRUE,
+  show_column_names = FALSE,   
+  cluster_rows = TRUE,
+  cluster_columns = TRUE,
+  column_title = "Samples",
+  row_title = "Genes",
+  show_row_dend = FALSE, 
+  show_column_dend = FALSE,
+  col = colorRamp2(
+    c(0, 5, 10, 15, 20),
+    c("lightskyblue", "dodgerblue", "blue", "violet", "purple")
+  ),
+  column_names_gp = gpar(fontsize = 6),  
+  row_names_gp = gpar(fontsize = 10)
+)
+
+draw(ht, 
+     heatmap_legend_side = "right", 
+     annotation_legend_side = "right",
+     merge_legend = TRUE
+     )
+
+#additional plot(Cumulative Distribution Function)
+gene_data <- data.frame(Expression = gene_sample_project)
+
+vlines <- data.frame(
+  value = c(mean_gene, median_gene),
+  type = c("Mean", "Median")
+)
+
+ggplot(gene_data, aes(x = Expression)) +
+  stat_ecdf(geom = "step", color = "coral", size = 1) +
+  geom_vline(data = vlines, aes(xintercept = value, color = type), linetype = "dashed", size = 1) +
+  scale_color_manual(values = c("Mean" = "blue", "Median" = "red")) +
+  labs(
+    x = "Gene Expression",
+    y = "Cumulative Fraction",
+    title = "CDF of GCLC Expression in Patients",
+    color = "Statistics"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text = element_text(face = "bold"),
+    axis.title = element_text(face = "bold"),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0.5)
+  )
+
+ggsave("cdf_project.png", width = 8, height = 6, dpi = 300)
+
+
+
+
+
+
+```
+
+
